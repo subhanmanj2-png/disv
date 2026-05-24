@@ -1,246 +1,276 @@
 // ==========================================
-// NEARDIS - CORE APPLICATION LOGIC
+// NEARDIS - COMPLETE UNIFIED BACKEND & LOGIC
 // ==========================================
 
-// NOTE: Replace this with your actual GitHub Raw URL before deploying
-const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/username/neardis-app/main/neardis-deals.json'; 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Application State
+const firebaseConfig = {
+  apiKey: "AIzaSyA8DvmRmJygJo31qv6CER7m0KDto547zZc",
+  authDomain: "neardis.firebaseapp.com",
+  projectId: "neardis",
+  storageBucket: "neardis.firebasestorage.app",
+  messagingSenderId: "703848374164",
+  appId: "1:703848374164:web:64462329b430a71a3f7981",
+  measurementId: "G-4F405CJ2ZN"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+
 const AppState = {
-  user: null, // Starts null to enforce authentication
-  userLocation: null, 
-  deals: [],
-  activeCategory: 'all',
-  flashFilter: false,
-  searchQuery: '',
-  savedDeals: new Set()
+  user: null, userLocation: null, deals: [],
+  activeCategory: 'all', flashFilter: false, searchQuery: '',
+  savedDeals: new Set(),
+  verifyStep: 0,
+  history: [] // Surprise history
 };
 
 // ==========================================
-// INITIALIZATION
+// AUTHENTICATION & ROUTING
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  initApp();
-  setupEventListeners();
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    AppState.user = {
+      name: user.displayName || "User", email: user.email, uid: user.uid,
+      initials: (user.displayName || "User").substring(0, 2).toUpperCase()
+    };
+    document.getElementById('topbar-avatar').textContent = AppState.user.initials;
+    document.getElementById('profile-avatar').textContent = AppState.user.initials;
+    document.getElementById('profile-name').textContent = AppState.user.name;
+    
+    document.getElementById('main-sidebar').style.display = 'flex';
+    
+    fetchUserLocation();
+    await fetchDeals();
+    window.showPage('feed');
+  } else {
+    AppState.user = null;
+    document.getElementById('main-sidebar').style.display = 'none';
+    renderAuthForm();
+    window.showPage('auth');
+  }
 });
 
-async function initApp() {
-  // 1. Enforce Auth Wall Immediately
-  showPage('auth');
-
-  // 2. Fetch User Geolocation (Happens in background)
-  fetchUserLocation();
-
-  // 3. Fetch Deals from GitHub (Happens in background)
+window.realGoogleLogin = async () => {
   try {
-    const response = await fetch(GITHUB_DATA_URL);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-    const data = await response.json();
-    AppState.deals = data;
-    
+    await signInWithPopup(auth, googleProvider);
   } catch (error) {
-    console.error("Failed to load deals:", error);
-    const grid = document.getElementById('deal-grid');
-    if (grid) {
-      grid.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">
-          ⚠️ Waiting on GitHub database link. Update GITHUB_DATA_URL in app.js.
-        </div>
-      `;
-    }
+    alert("Login Failed: " + error.message);
   }
+};
+
+window.realLogout = () => signOut(auth);
+
+function renderAuthForm() {
+  const container = document.getElementById('auth-content');
+  if (!container) return;
+  container.innerHTML = `
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px;">Neardis</div>
+      <div style="font-size: 13px; color: var(--text2);">Hyperlocal deal discovery</div>
+    </div>
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;">
+      <div style="font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; text-align: center;">Welcome</div>
+      
+      <button class="btn btn-ghost" style="width: 100%; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="realGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+
+      <button class="btn btn-ghost" style="width: 100%; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="alert('Apple Login coming soon.')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.04 2.26-.7 3.59-.79 1.8-.13 3.23.63 4.12 1.95-3.52 2.06-2.92 6.64.47 8.01-.84 1.25-1.74 2.22-3.26 2.99zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        Continue with Apple
+      </button>
+    </div>
+  `;
 }
 
 // ==========================================
-// USER AUTHENTICATION & LOCATION
+// CORE DATA & NAVIGATION
 // ==========================================
+
+async function fetchDeals() {
+  try {
+    const querySnapshot = await getDocs(collection(db, "deals"));
+    if (querySnapshot.empty) {
+      // Seed UI with test deals if Firebase is empty so the app doesn't look broken
+      AppState.deals = [
+        { id: 1, shopName: "Café Zest", emoji: "☕", category: "food", title: "50% off Beverages", discount: 50, distance: 0.2, flash: true, rating: 4.8, originalPrice: 650, price: 325, coordinates: { lat: 31.5204, lng: 74.3587 } },
+        { id: 2, shopName: "TechZone", emoji: "📱", category: "electronics", title: "Phone Cases 3-for-1", discount: 66, distance: 0.8, flash: false, rating: 4.5, originalPrice: 3000, price: 1000, coordinates: { lat: 31.5215, lng: 74.3599 } }
+      ];
+    } else {
+      AppState.deals = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+    renderFeed();
+  } catch (e) {
+    console.error("Firebase read error:", e);
+  }
+}
 
 function fetchUserLocation() {
   const geoStatus = document.getElementById('geo-status');
-  
   if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        AppState.userLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        if (geoStatus) geoStatus.textContent = "📍 Location synced.";
-        setTimeout(() => { if (geoStatus) geoStatus.style.display = 'none'; }, 2000);
+      (pos) => {
+        AppState.userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (geoStatus) geoStatus.style.display = 'none';
       },
-      (error) => {
-        console.error("Error getting location", error);
-        if (geoStatus) geoStatus.textContent = "⚠️ Location access denied. Using default map center.";
-        AppState.userLocation = { lat: 31.5204, lng: 74.3587 };
-      }
+      () => { AppState.userLocation = { lat: 31.5204, lng: 74.3587 }; } // Fallback to Lahore
     );
-  } else {
-    if (geoStatus) geoStatus.textContent = "Geolocation is not supported by your browser.";
-    AppState.userLocation = { lat: 31.5204, lng: 74.3587 };
   }
 }
 
-// ==========================================
-// EVENT LISTENERS & ROUTING GUARD
-// ==========================================
-
-function setupEventListeners() {
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      AppState.searchQuery = e.target.value.toLowerCase();
-      renderFeed();
-    });
-  }
-}
-
-function showPage(pageId) {
-  // AUTH ROUTE GUARD: If no user is logged in, force navigation to the auth page.
-  if (!AppState.user && pageId !== 'auth') {
-    console.warn("Unauthorized access attempt intercepted. Redirecting to Auth.");
-    pageId = 'auth';
-  }
-
-  // Hide all pages
-  document.querySelectorAll('.page').forEach(page => {
-    page.classList.remove('active');
+window.showPage = function(pageId) {
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
   });
   
-  // Show target page
-  const targetPage = document.getElementById(`page-${pageId}`);
-  if (targetPage) targetPage.classList.add('active');
-  
-  // Toggle Sidebar Visibility: Hide on Auth, Show on others
-  const sidebar = document.querySelector('.sidebar');
-  if (sidebar) {
-    sidebar.style.display = pageId === 'auth' ? 'none' : 'flex';
+  const target = document.getElementById(`page-${pageId}`);
+  if (target) {
+    target.classList.add('active');
+    target.style.display = 'flex';
   }
-
-  // Update Navigation Active State
+  
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.remove('active');
-    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(pageId)) {
-      btn.classList.add('active');
-    }
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(pageId)) btn.classList.add('active');
   });
 
-  // Route logic to trigger initialization functions in separate files
-  if (pageId === 'auth' && typeof initAuth === 'function') initAuth();
-  if (pageId === 'feed') renderFeed(); // Ensure feed renders fresh on return
-  if (pageId === 'map' && typeof initMap === 'function') initMap();
-  if (pageId === 'surprise' && typeof initSurprise === 'function') initSurprise();
-  if (pageId === 'route' && typeof initRoute === 'function') initRoute();
-  if (pageId === 'bookmarks') renderBookmarks();
-  if (pageId === 'notifications' && typeof initNotifications === 'function') initNotifications();
-  if (pageId === 'business' && typeof initBusiness === 'function') initBusiness();
-  if (pageId === 'verify' && typeof initVerify === 'function') initVerify();
-}
+  if (pageId === 'map') initMap();
+  if (pageId === 'verify') { AppState.verifyStep = 0; renderVerify(); }
+  if (pageId === 'business') renderBizTab('overview');
+};
 
 // ==========================================
-// FILTERING LOGIC
+// FEED LOGIC
 // ==========================================
 
-function setCategory(category, element) {
-  AppState.activeCategory = category;
-  
-  document.querySelectorAll('.chip').forEach(chip => chip.classList.remove('active'));
-  if (element) element.classList.add('active');
-  
-  renderFeed();
-}
+window.setCategory = (cat, el) => { AppState.activeCategory = cat; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); if (el) el.classList.add('active'); renderFeed(); };
+window.toggleFlashFilter = (el) => { AppState.flashFilter = !AppState.flashFilter; if (el) el.classList.toggle('active'); renderFeed(); };
 
-function toggleFlashFilter(element) {
-  AppState.flashFilter = !AppState.flashFilter;
-  if (element) element.classList.toggle('active', AppState.flashFilter);
-  renderFeed();
-}
-
-// ==========================================
-// RENDERING ENGINES
-// ==========================================
+document.getElementById('search-input').addEventListener('input', (e) => { AppState.searchQuery = e.target.value.toLowerCase(); renderFeed(); });
 
 function renderFeed() {
   const grid = document.getElementById('deal-grid');
-  if (!grid) return;
-  
-  let filteredDeals = [...AppState.deals];
-
-  // Apply Filters
-  if (AppState.activeCategory !== 'all') {
-    filteredDeals = filteredDeals.filter(d => d.category === AppState.activeCategory);
-  }
-  if (AppState.flashFilter) {
-    filteredDeals = filteredDeals.filter(d => d.flash === true);
-  }
-  if (AppState.searchQuery) {
-    filteredDeals = filteredDeals.filter(d => 
-      d.title.toLowerCase().includes(AppState.searchQuery) || 
-      d.shopName.toLowerCase().includes(AppState.searchQuery)
-    );
-  }
-
-  // Sort by Distance
-  filteredDeals.sort((a, b) => a.distance - b.distance);
-
-  if (filteredDeals.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">No deals found matching your criteria.</div>`;
-    return;
-  }
-
-  grid.innerHTML = filteredDeals.map(d => generateDealCard(d)).join('');
+  if(!grid) return;
+  let filtered = AppState.deals.filter(d => 
+    (AppState.activeCategory === 'all' || d.category === AppState.activeCategory) &&
+    (!AppState.flashFilter || d.flash) &&
+    (!AppState.searchQuery || d.title.toLowerCase().includes(AppState.searchQuery))
+  );
+  grid.innerHTML = filtered.length ? filtered.map(d => generateCard(d)).join('') : `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">No deals found.</div>`;
 }
 
-function generateDealCard(deal) {
+function generateCard(deal) {
   const isSaved = AppState.savedDeals.has(deal.id);
-  
   return `
     <div class="deal-card ${deal.flash ? 'flash' : ''}" onclick="openDealModal(${deal.id})">
-      <div class="deal-img">
-        ${deal.emoji}
-        <div class="deal-badge">-${deal.discount}%</div>
-      </div>
+      <div class="deal-img">${deal.emoji}<div class="deal-badge">-${deal.discount}%</div></div>
       <div class="deal-body">
         <div class="deal-shop">${deal.shopName}</div>
         <div class="deal-title">${deal.title}</div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <span style="font-size: 11px; color: var(--text3);">📍 ${deal.distance}km away</span>
-          <button style="background: none; border: none; font-size: 16px; cursor: pointer;" 
-                  onclick="toggleBookmark(event, ${deal.id})">
-            ${isSaved ? '🔖' : '🤍'}
-          </button>
+          <button style="background: none; border: none; font-size: 16px; cursor: pointer;" onclick="event.stopPropagation(); toggleBookmark(${deal.id})">${isSaved ? '🔖' : '🤍'}</button>
         </div>
       </div>
     </div>
   `;
 }
 
-function renderBookmarks() {
-  const grid = document.getElementById('bookmark-grid');
-  const savedList = AppState.deals.filter(d => AppState.savedDeals.has(d.id));
+window.toggleBookmark = (id) => { AppState.savedDeals.has(id) ? AppState.savedDeals.delete(id) : AppState.savedDeals.add(id); renderFeed(); };
 
-  if (savedList.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">No saved deals yet.</div>`;
+// ==========================================
+// MAP FIX LOGIC
+// ==========================================
+let mapInstance = null;
+
+function initMap() {
+  const mapContainer = document.getElementById('real-map-container');
+  if (!mapContainer) return;
+
+  if (mapInstance !== null) {
+    // CRUCIAL FIX: Force Leaflet to recalculate size when unhidden
+    setTimeout(() => { mapInstance.invalidateSize(); }, 100);
     return;
   }
 
-  grid.innerHTML = savedList.map(d => generateDealCard(d)).join('');
+  mapInstance = L.map('real-map-container').setView([31.5204, 74.3587], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { className: 'map-tiles-dark' }).addTo(mapInstance);
+
+  AppState.deals.forEach(deal => {
+    if (!deal.coordinates) return;
+    const dealIcon = L.divIcon({
+      className: 'custom-deal-marker',
+      html: `<div style="background:var(--accent); color:#000; font-weight:700; font-size:10px; padding:3px 7px; border-radius:5px 5px 5px 0;">-${deal.discount}%</div><div style="width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--accent); margin-left:2px;"></div>`,
+      iconSize: [40, 40], iconAnchor: [0, 15] 
+    });
+    L.marker([deal.coordinates.lat, deal.coordinates.lng], { icon: dealIcon }).addTo(mapInstance).bindPopup(`<b>${deal.shopName}</b><br>${deal.title}`);
+  });
+
+  // CRUCIAL FIX for first load
+  setTimeout(() => { mapInstance.invalidateSize(); }, 100);
 }
 
 // ==========================================
-// USER ACTIONS
+// ID-ONLY VERIFICATION LOGIC
 // ==========================================
 
-function toggleBookmark(event, dealId) {
-  event.stopPropagation(); 
-  
-  if (AppState.savedDeals.has(dealId)) {
-    AppState.savedDeals.delete(dealId);
+function renderVerify() {
+  const steps = ['Business Info', 'Address', 'Upload ID', 'Done'];
+  const p = steps.map((_, i) => `<div style="flex:1; height:3px; border-radius:2px; background: ${i < AppState.verifyStep ? '#2ecc71' : i === AppState.verifyStep ? 'var(--accent)' : 'var(--border)'};"></div>`).join('');
+  document.getElementById('verify-steps').innerHTML = `<div style="display:flex; gap:6px; margin-bottom:20px;">${p}</div>`;
+
+  const c = document.getElementById('verify-content');
+  if (AppState.verifyStep === 0) {
+    c.innerHTML = `
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 14px;">Step 1: Business Information</div>
+        <div style="margin-bottom: 14px;"><label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 5px;">Business Name</label><input type="text" placeholder="Your shop name" style="width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: var(--radius2); outline: none;"></div>
+        <button class="btn btn-primary" onclick="AppState.verifyStep=1; renderVerify()">Next: Address ➔</button>
+      </div>`;
+  } else if (AppState.verifyStep === 1) {
+    c.innerHTML = `
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 14px;">Step 2: Verify Address</div>
+        <div style="margin-bottom: 14px;"><label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 5px;">Street Address</label><input type="text" style="width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: var(--radius2); outline: none;"></div>
+        <div style="display: flex; gap: 7px;"><button class="btn btn-ghost" onclick="AppState.verifyStep=0; renderVerify()">← Back</button><button class="btn btn-primary" onclick="AppState.verifyStep=2; renderVerify()">Next: Upload ID ➔</button></div>
+      </div>`;
+  } else if (AppState.verifyStep === 2) {
+    c.innerHTML = `
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 14px;">Step 3: Identity Verification</div>
+        <div style="border: 2px dashed var(--border); border-radius: var(--radius2); padding: 20px; text-align: center; cursor: pointer; margin-bottom: 10px;">
+          <div style="font-size: 20px; margin-bottom: 3px;">🪪</div><div style="font-size: 12px; font-weight: 600;">CNIC / ID Proof</div><div style="font-size: 10px; color: var(--text3);">Clear photo of owner's identity card</div>
+        </div>
+        <div style="display: flex; gap: 7px; margin-top: 10px;"><button class="btn btn-ghost" onclick="AppState.verifyStep=1; renderVerify()">← Back</button><button class="btn btn-primary" onclick="AppState.verifyStep=3; renderVerify()">Submit ID ✓</button></div>
+      </div>`;
   } else {
-    AppState.savedDeals.add(dealId);
+    c.innerHTML = `<div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); text-align: center; padding: 32px;"><div style="font-size: 52px; margin-bottom: 14px;">⏳</div><div style="font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px;">ID Submitted!</div><div style="font-size: 13px; color: var(--text2); margin-bottom: 16px;">We will review your ID card within 24 hours.</div><button class="btn btn-ghost" onclick="AppState.verifyStep=0; renderVerify()">Start Over</button></div>`;
   }
-  
-  if (document.getElementById('page-feed').classList.contains('active')) renderFeed();
-  if (document.getElementById('page-bookmarks').classList.contains('active')) renderBookmarks();
 }
+window.renderVerify = renderVerify;
+
+// ==========================================
+// MODALS
+// ==========================================
+
+window.openDealModal = function(id) {
+  const deal = AppState.deals.find(d => d.id === id);
+  if (!deal) return;
+  document.getElementById('modal-main').innerHTML = `
+    <div style="font-size: 72px; text-align: center; margin-bottom: 14px;">${deal.emoji}</div>
+    <div style="font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 8px;">${deal.title}</div>
+    <div style="font-size: 13px; color: var(--text2); margin-bottom: 14px;">${deal.shopName} - Original Price: Rs ${deal.originalPrice} | Now: Rs ${deal.price}</div>
+  `;
+  document.getElementById('modal-side').innerHTML = `<div style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">📍 ${deal.distance}km away</div>`;
+  document.getElementById('deal-modal').style.display = 'flex';
+};
+
+window.closeDealModal = () => { document.getElementById('deal-modal').style.display = 'none'; };
