@@ -12,7 +12,10 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root { --bg: #000000; --bg2: #09090b; --surface: #18181b; --surface2: #27272a; --border: #27272a; --border2: #3f3f46; --text: #ffffff; --text2: #a1a1aa; --text3: #71717a; --accent: #ffffff; --radius: 12px; --radius2: 8px; }
 body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* The app hides until verified to stop flashing */
+.app { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s ease; }
+
 .sidebar { display: flex; width: 72px; background: var(--bg2); border-right: 1px solid var(--border); flex-direction: column; align-items: center; padding: 16px 0; gap: 4px; flex-shrink: 0; z-index: 100; overflow-y: auto; }
 .sidebar::-webkit-scrollbar { display: none; }
 .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--accent); margin-bottom: 12px; letter-spacing: -1px; cursor: pointer; }
@@ -68,9 +71,11 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 </style>
 </head>
 <body>
-<div class="app">
 
-<div class="sidebar" id="main-sidebar">
+<div class="app" id="main-app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
   <div class="logo">N</div>
   <button class="nav-btn active" onclick="showPage('feed')" title="Feed">📍</button>
   <div class="nav-label">Feed</div>
@@ -95,6 +100,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 </div>
 
 <div class="main">
+  <!-- PAGE: FEED -->
   <div class="page active" id="page-feed">
     <div class="topbar">
       <div class="topbar-title">Neardis</div>
@@ -105,10 +111,10 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
       <div class="avatar" id="topbar-avatar" onclick="showPage('profile')"></div>
     </div>
     <div class="chips" id="cat-chips">
-      <div class="chip active" onclick="setCat('all', this)">All Deals</div>
-      <div class="chip" onclick="setCat('food', this)">Food</div>
-      <div class="chip" onclick="setCat('fashion', this)">Fashion</div>
-      <div class="chip" onclick="setCat('electronics', this)">Electronics</div>
+      <div class="chip active" onclick="setCategory('all', this)">All Deals</div>
+      <div class="chip" onclick="setCategory('food', this)">Food</div>
+      <div class="chip" onclick="setCategory('fashion', this)">Fashion</div>
+      <div class="chip" onclick="setCategory('electronics', this)">Electronics</div>
       <div class="chip" onclick="toggleFlashFilter(this)" style="margin-left: auto; border-color: var(--border2);">⚡ Flash Only</div>
     </div>
     <div class="feed-layout">
@@ -128,11 +134,13 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
     </div>
   </div>
 
+  <!-- PAGE: MAP -->
   <div class="page" id="page-map" style="display: none; flex-direction: column;">
     <div class="topbar"><div class="topbar-title">Deal Map</div></div>
     <div id="real-map-container" style="flex: 1; min-height: 0; width: 100%; z-index: 1;"></div>
   </div>
 
+  <!-- PAGE: SURPRISE ME -->
   <div class="page" id="page-surprise">
     <div class="topbar"><div class="topbar-title">Surprise Me</div></div>
     <div class="scroll" style="padding: 20px; max-width: 560px; margin: 0 auto; width: 100%;">
@@ -145,41 +153,35 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
     </div>
   </div>
 
+  <!-- PAGE: ROUTE ALERTS -->
   <div class="page" id="page-route">
     <div class="topbar"><div class="topbar-title">Route Alerts</div></div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); flex: 1; overflow-y: auto;">
       <div style="padding: 16px; border-right: 1px solid var(--border);">
         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text3); margin-bottom: 10px;">Configure New Route</div>
         <div style="background: var(--bg2); padding: 14px; border: 1px solid var(--border); border-radius: var(--radius2);">
-          <div style="margin-bottom: 10px;">
-            <label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 4px;">Start Point</label>
-            <input type="text" value="Gulberg III" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: var(--radius2); outline: none;">
-          </div>
-          <div style="margin-bottom: 10px;">
-            <label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 4px;">End Point</label>
-            <input type="text" value="Liberty Market" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: var(--radius2); outline: none;">
-          </div>
+          <div style="margin-bottom: 10px;"><label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 4px;">Start Point</label><input type="text" value="Gulberg III" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: var(--radius2); outline: none;"></div>
+          <div style="margin-bottom: 10px;"><label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 4px;">End Point</label><input type="text" value="Liberty Market" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: var(--radius2); outline: none;"></div>
           <button class="btn btn-ghost" style="width: 100%; margin-top: 8px;">Save Setup</button>
         </div>
       </div>
-      <div style="padding: 16px; background: var(--bg);">
-        <div class="deal-grid" id="route-deals"><div style="color:var(--text3);font-size:12px;">Activate a route to see deals.</div></div>
-      </div>
+      <div style="padding: 16px; background: var(--bg);"><div class="deal-grid" id="route-deals"><div style="color:var(--text3);font-size:12px;">Activate a route to see deals.</div></div></div>
     </div>
   </div>
 
+  <!-- PAGE: BOOKMARKS -->
   <div class="page" id="page-bookmarks">
     <div class="topbar"><div class="topbar-title">Saved Deals</div></div>
-    <div class="scroll">
-      <div class="deal-grid" id="bookmark-grid"><div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">No saved deals yet.</div></div>
-    </div>
+    <div class="scroll"><div class="deal-grid" id="bookmark-grid"><div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">No saved deals yet.</div></div></div>
   </div>
 
+  <!-- PAGE: NOTIFICATIONS -->
   <div class="page" id="page-notifications">
     <div class="topbar"><div class="topbar-title">Notifications</div></div>
     <div class="scroll" style="padding: 20px; color: var(--text3);">No new alerts.</div>
   </div>
   
+  <!-- PAGE: BUSINESS DASHBOARD -->
   <div class="page" id="page-business">
     <div class="topbar"><div class="topbar-title">Business Dashboard</div><div style="font-size: 11px; color: var(--text); margin-left: 10px; font-weight: 600;">✓ Verified</div></div>
     <div class="scroll" id="biz-content" style="padding: 20px;">
@@ -190,6 +192,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
     </div>
   </div>
 
+  <!-- PAGE: VERIFY SHOP -->
   <div class="page" id="page-verify">
     <div class="topbar"><div class="topbar-title">Shop Verification</div></div>
     <div class="scroll" style="padding: 20px; max-width: 580px; margin: 0 auto; width: 100%;">
@@ -202,6 +205,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
     </div>
   </div>
 
+  <!-- PAGE: PROFILE -->
   <div class="page" id="page-profile">
     <div class="topbar"><div class="topbar-title">My Profile</div></div>
     <div class="scroll" style="max-width: 600px; margin: 0 auto; width: 100%;">
@@ -217,6 +221,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 </div>
 </div>
 
+<!-- DEAL MODAL -->
 <div id="deal-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
   <div style="width: 100%; max-width: 860px; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border);">
