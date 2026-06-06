@@ -27,7 +27,7 @@ const AppState = {
 };
 
 // ==========================================
-// ROUTING GUARD & DEV BYPASS
+// LOOP-PROOF ROUTING GUARD 
 // ==========================================
 
 onAuthStateChanged(auth, async (user) => {
@@ -46,15 +46,19 @@ onAuthStateChanged(auth, async (user) => {
       };
     }
     
+    // Set up Profile View
     document.getElementById('topbar-avatar').textContent = AppState.user.initials;
     document.getElementById('profile-avatar').textContent = AppState.user.initials;
     document.getElementById('profile-name').textContent = AppState.user.name;
+    
+    // Reveal the app securely now that we know who they are
+    document.getElementById('main-app').style.opacity = '1';
     
     fetchUserLocation();
     await fetchDeals();
     window.showPage('feed');
   } else {
-    // SECURITY KICK: If not logged in and no bypass, force login page
+    // If absolutely not logged in and no bypass, send back to login securely
     window.location.href = 'login.html';
   }
 });
@@ -121,7 +125,7 @@ window.showPage = function(pageId) {
 // FEED LOGIC
 // ==========================================
 
-window.setCat = (cat, el) => { AppState.activeCategory = cat; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); if (el) el.classList.add('active'); renderFeed(); };
+window.setCategory = (cat, el) => { AppState.activeCategory = cat; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); if (el) el.classList.add('active'); renderFeed(); };
 window.toggleFlashFilter = (el) => { AppState.flashFilter = !AppState.flashFilter; if (el) el.classList.toggle('active'); renderFeed(); };
 document.getElementById('search-input').addEventListener('input', (e) => { AppState.searchQuery = e.target.value.toLowerCase(); renderFeed(); });
 
