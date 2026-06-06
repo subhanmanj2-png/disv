@@ -2,113 +2,119 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Neardis — Hyperlocal Deal Discovery</title>
+
+<!-- Fonts & Map Libraries -->
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Strict Zinc & Matte Black Theme Applied */
-:root{
-  --bg:#000000;--bg2:#09090b;--bg3:#18181b;--bg4:#27272a;
-  --surface:#18181b;--surface2:#27272a;--surface3:#3f3f46;
-  --border:#27272a;--border2:#3f3f46;
-  --text:#ffffff;--text2:#a1a1aa;--text3:#71717a;
-  --accent:#ffffff;--accent2:#d4d4d8;
-  --blue:#ffffff;--green:#ffffff;--amber:#ffffff;--purple:#ffffff;
-  --teal:#ffffff;--pink:#ffffff;
-  --radius:12px;--radius2:8px;
+/* Strict Zinc & Matte Black Theme */
+:root {
+  --bg: #000000; --bg2: #09090b; 
+  --surface: #18181b; --surface2: #27272a; 
+  --border: #27272a; --border2: #3f3f46; 
+  --text: #ffffff; --text2: #a1a1aa; --text3: #71717a; 
+  --accent: #ffffff; 
+  --radius: 12px; --radius2: 8px;
 }
-body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-.app{display:flex;height:100vh;overflow:hidden}
 
-/* SIDEBAR - Hidden by default until login */
-.sidebar{display:none;width:72px;background:var(--bg2);border-right:1px solid var(--border);flex-direction:column;align-items:center;padding:16px 0;gap:4px;flex-shrink:0;z-index:100;overflow-y:auto}
-.sidebar::-webkit-scrollbar{display:none}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--accent);margin-bottom:12px;letter-spacing:-1px;cursor:pointer}
-.nav-btn{width:48px;height:48px;border:none;background:transparent;border-radius:var(--radius2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:all .2s;color:var(--text3);position:relative;flex-shrink:0}
-.nav-btn:hover{background:var(--surface);color:var(--text)}
-.nav-btn.active{background:var(--surface2);color:var(--accent)}
-.nav-btn .badge{position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--text);border-radius:50%;border:2px solid var(--bg2)}
-.nav-sep{width:32px;height:1px;background:var(--border);margin:6px 0;flex-shrink:0}
-.nav-label{font-size:9px;color:var(--text3);text-align:center;letter-spacing:.3px;margin-top:-2px;margin-bottom:4px}
+body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+.app { display: flex; height: 100vh; overflow: hidden; }
 
-/* MAIN */
-.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.page{display:none;flex:1;overflow:hidden;flex-direction:column;animation:fadeIn .25s ease}
-.page.active{display:flex}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* SIDEBAR */
+.sidebar { display: flex; width: 72px; background: var(--bg2); border-right: 1px solid var(--border); flex-direction: column; align-items: center; padding: 16px 0; gap: 4px; flex-shrink: 0; z-index: 100; overflow-y: auto; }
+.sidebar::-webkit-scrollbar { display: none; }
+.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--accent); margin-bottom: 12px; letter-spacing: -1px; cursor: pointer; }
+.nav-btn { width: 48px; height: 48px; border: none; background: transparent; border-radius: var(--radius2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all .2s; color: var(--text3); position: relative; flex-shrink: 0; }
+.nav-btn:hover { background: var(--surface); color: var(--text); }
+.nav-btn.active { background: var(--surface2); color: var(--accent); }
+.nav-sep { width: 32px; height: 1px; background: var(--border); margin: 6px 0; flex-shrink: 0; }
+.nav-label { font-size: 9px; color: var(--text3); text-align: center; letter-spacing: .3px; margin-top: -2px; margin-bottom: 4px; }
 
-/* TOPBAR */
-.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;min-height:52px}
-.topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;white-space:nowrap}
-.search-bar{flex:1;max-width:320px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:7px 14px}
-.search-bar input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:13px;flex:1;min-width:0}
-.search-bar input::placeholder{color:var(--text3)}
-.btn{padding:7px 14px;border-radius:var(--radius2);border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:all .2s;white-space:nowrap}
-.btn-primary{background:var(--text);color:var(--bg)}
-.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
-.btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border)}
-.btn-ghost:hover{background:var(--surface2)}
-.btn-sm{padding:5px 10px;font-size:11px}
-.avatar{width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--text);flex-shrink:0;cursor:pointer}
+/* MAIN CONTAINER */
+.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
+.page { display: none; flex: 1; overflow: hidden; flex-direction: column; animation: fadeIn .25s ease; }
+.page.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-/* SCROLL */
-.scroll{overflow-y:auto;flex:1;padding:16px}
-.scroll::-webkit-scrollbar{width:4px}
-.scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+/* TOPBAR & CHIPS */
+.topbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 52px; }
+.topbar-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; white-space: nowrap; }
+.search-bar { flex: 1; max-width: 320px; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 7px 14px; }
+.search-bar input { background: none; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 13px; flex: 1; min-width: 0; }
+.search-bar input::placeholder { color: var(--text3); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+.chip { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 11px; font-weight: 500; cursor: pointer; transition: all .2s; }
+.chip:hover { border-color: var(--border2); color: var(--text); }
+.chip.active { background: var(--surface2); border-color: var(--accent); color: var(--bg); }
 
-/* CHIPS */
-.chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px;white-space:nowrap}
-.chip:hover{border-color:var(--border2);color:var(--text)}
-.chip.active{background:var(--surface2);border-color:var(--text);color:var(--text)}
+/* BUTTONS & CARDS */
+.btn { padding: 7px 14px; border-radius: var(--radius2); border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600; transition: all .2s; }
+.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+.btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface2); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(--accent); flex-shrink: 0; cursor: pointer; }
 
-/* DEAL CARDS */
-.deal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.deal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
-.deal-card:hover{border-color:var(--border2);transform:translateY(-2px);}
-.deal-card.flash{border-color:rgba(255,255,255,.4);box-shadow:0 0 15px rgba(255,255,255,.1)}
-.flash-label{position:absolute;top:8px;left:8px;background:var(--text);color:var(--bg);font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;z-index:2;letter-spacing:.5px}
-.deal-img{width:100%;height:130px;display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;background:var(--bg3)}
-.deal-badge{position:absolute;top:8px;right:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);font-weight:700;font-size:12px;padding:3px 8px;border-radius:5px}
-.deal-body{padding:12px}
-.deal-shop{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;display:flex;align-items:center;gap:4px}
-.deal-title{font-size:13px;font-weight:600;margin-bottom:7px;line-height:1.3}
-.deal-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.deal-dist{font-size:10px;color:var(--text3)}
-.deal-footer{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--border);background:var(--bg3)}
-.bm-btn{background:none;border:none;cursor:pointer;font-size:15px;color:var(--text3);transition:all .2s;padding:2px}
-.bm-btn.saved{color:var(--text)}
+.scroll { overflow-y: auto; flex: 1; padding: 16px; }
+.deal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.deal-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: all .2s; position: relative; }
+.deal-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.deal-card.flash { border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+.deal-img { width: 100%; height: 130px; display: flex; align-items: center; justify-content: center; font-size: 44px; background: var(--surface); position: relative; }
+.deal-badge { position: absolute; top: 8px; right: 8px; background: var(--bg); color: var(--accent); border: 1px solid var(--border); font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 5px; }
+.deal-body { padding: 12px; }
+.deal-shop { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+.deal-title { font-size: 13px; font-weight: 600; margin-bottom: 7px; line-height: 1.3; }
 
-/* FEED LAYOUT */
+/* FEED SPECIFIC */
 .feed-layout{display:grid;grid-template-columns:1fr 280px;flex:1;overflow:hidden}
 .feed-main{overflow-y:auto;padding:16px}
 .feed-main::-webkit-scrollbar{width:4px}
 .feed-main::-webkit-scrollbar-thumb{background:var(--border2)}
 .feed-side{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:14px}
-.feed-side::-webkit-scrollbar{width:4px}
-.feed-side::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* MAP FIXES */
+.map-tiles-dark { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); }
+.leaflet-container { background: var(--bg) !important; font-family: 'Space Grotesk', sans-serif; height: 100%; width: 100%; }
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+  .app { flex-direction: column-reverse; }
+  .sidebar { width: 100%; height: 65px; flex-direction: row; justify-content: space-around; padding: 0 10px; border-right: none; border-top: 1px solid var(--border); overflow-y: visible; }
+  .logo, .nav-sep, .nav-label { display: none; }
+  .nav-btn { width: flex; flex: 1; height: 100%; border-radius: 0; }
+  .topbar { padding: 10px; }
+  .search-bar { max-width: none; }
+  .feed-layout { grid-template-columns: 1fr; }
+  .feed-side { display: none; }
+}
 </style>
 </head>
 <body>
 <div class="app">
 
+<!-- SIDEBAR -->
 <div class="sidebar" id="main-sidebar">
-  <div class="logo" onclick="showPage('feed')">N</div>
+  <div class="logo">N</div>
   <button class="nav-btn active" onclick="showPage('feed')" title="Feed">📍</button>
   <div class="nav-label">Feed</div>
   <button class="nav-btn" onclick="showPage('map')" title="Map">🗺️</button>
   <div class="nav-label">Map</div>
-  <button class="nav-btn" onclick="showPage('route')" title="Route">🛣️</button>
-  <div class="nav-label">Route</div>
-  <div class="nav-sep"></div>
-  <button class="nav-btn" onclick="showPage('bookmarks')" title="Saved">🔖</button>
-  <div class="nav-label">Saved</div>
-  <button class="nav-btn" onclick="showPage('notifications')" title="Alerts"><div class="badge"></div>🔔</button>
-  <div class="nav-label">Alerts</div>
   <button class="nav-btn" onclick="showPage('surprise')" title="Surprise">🎲</button>
   <div class="nav-label">Surprise</div>
+  <button class="nav-btn" onclick="showPage('route')" title="Route">🛣️</button>
+  <div class="nav-label">Route</div>
+  <button class="nav-btn" onclick="showPage('bookmarks')" title="Saved">🔖</button>
+  <div class="nav-label">Saved</div>
+  <button class="nav-btn" onclick="showPage('notifications')" title="Alerts">🔔</button>
+  <div class="nav-label">Alerts</div>
   <div class="nav-sep"></div>
   <button class="nav-btn" onclick="showPage('business')" title="Business">🏢</button>
   <div class="nav-label">Biz</div>
@@ -121,242 +127,170 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 
 <div class="main">
 
-<div class="page active" id="page-auth" style="justify-content: center; align-items: center; padding: 20px;">
-  <div id="auth-content" style="width: 100%; max-width: 400px;"></div>
-</div>
-
-<div class="page" id="page-feed">
-  <div class="topbar">
-    <div class="topbar-title">Neardis</div>
-    <div class="search-bar">
-      <span style="color:var(--text3);font-size:13px">🔍</span>
-      <input type="text" placeholder="Search deals near you..." id="search-input" oninput="renderDeals()">
+  <!-- PAGE: FEED (Default Active) -->
+  <div class="page active" id="page-feed">
+    <div class="topbar">
+      <div class="topbar-title">Neardis</div>
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" placeholder="Search deals..." id="search-input">
+      </div>
+      <div class="avatar" id="topbar-avatar" onclick="showPage('profile')"></div>
     </div>
-    <div style="display:flex;gap:6px;margin-left:auto">
-      <button class="btn btn-ghost btn-sm" onclick="triggerSurprise()">🎲 Surprise Me</button>
-    </div>
-    <div class="avatar" id="topbar-avatar" onclick="showPage('profile')">SM</div>
-  </div>
-  <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;gap:8px">
     <div class="chips" id="cat-chips">
-      <div class="chip active" onclick="setCat('all',this)">All Deals</div>
-      <div class="chip" onclick="setCat('food',this)">Food</div>
-      <div class="chip" onclick="setCat('fashion',this)">Fashion</div>
-      <div class="chip" onclick="setCat('electronics',this)">Electronics</div>
-      <div class="chip" onclick="setCat('beauty',this)">Beauty</div>
-      <div class="chip" onclick="setCat('home',this)">Home</div>
-      <div class="chip" id="flash-chip" onclick="toggleFF(this)" style="margin-left:auto;border-color:var(--border2);">⚡ Flash Only</div>
+      <div class="chip active" onclick="setCat('all', this)">All Deals</div>
+      <div class="chip" onclick="setCat('food', this)">Food</div>
+      <div class="chip" onclick="setCat('fashion', this)">Fashion</div>
+      <div class="chip" onclick="setCat('electronics', this)">Electronics</div>
+      <div class="chip" onclick="toggleFlashFilter(this)" style="margin-left: auto; border-color: var(--border2);">⚡ Flash Only</div>
+    </div>
+    <div class="feed-layout">
+      <div class="feed-main">
+        <div id="geo-status" style="font-size: 11px; text-align: center; color: var(--text3); margin-bottom: 10px;">Locating your position...</div>
+        <div class="deal-grid" id="deal-grid">
+          <div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">Loading Deals...</div>
+        </div>
+      </div>
+      <div class="feed-side">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:10px">🔥 Area Heatmap</div>
+        <div style="margin-bottom:8px; font-size:11px;">Liberty Market <span style="float:right;color:var(--text3)">94/km²</span><div style="height:4px;background:var(--border);margin-top:3px;border-radius:2px"><div style="height:100%;width:94%;background:var(--text);border-radius:2px"></div></div></div>
+        <div style="margin-bottom:14px; font-size:11px;">Gulberg Main <span style="float:right;color:var(--text3)">65/km²</span><div style="height:4px;background:var(--border);margin-top:3px;border-radius:2px"><div style="height:100%;width:65%;background:var(--text2);border-radius:2px"></div></div></div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:10px">👀 Recent Sightings</div>
+        <div style="font-size:11px;background:var(--surface);padding:8px;border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;"><strong>@raza_eats</strong>: Burger deal confirmed — queue is fast! <div style="color:var(--text3);margin-top:2px;">3m ago</div></div>
+      </div>
     </div>
   </div>
-  <div class="feed-layout">
-    <div class="feed-main">
-      <div class="deal-grid" id="deal-grid"></div>
-    </div>
-    <div class="feed-side">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:10px">🔥 Area Heatmap</div>
-      <div id="heatmap-list" style="margin-bottom:14px"></div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:10px">👀 Recent Sightings</div>
-      <div id="feed-sightings" style="margin-bottom:14px"></div>
-    </div>
-  </div>
-</div>
 
-<div class="page" id="page-map"><div class="topbar"><div class="topbar-title">Deal Map</div></div><div class="scroll">Map View Under Construction</div></div>
-<div class="page" id="page-route"><div class="topbar"><div class="topbar-title">Route Alerts</div></div><div class="scroll">Route Alerts Under Construction</div></div>
-<div class="page" id="page-bookmarks"><div class="topbar"><div class="topbar-title">Saved Deals</div></div><div class="scroll">Bookmarks Under Construction</div></div>
-<div class="page" id="page-notifications"><div class="topbar"><div class="topbar-title">Notifications</div></div><div class="scroll">Notifications Under Construction</div></div>
-<div class="page" id="page-surprise"><div class="topbar"><div class="topbar-title">Surprise Me</div></div><div class="scroll">Surprise Me Under Construction</div></div>
-<div class="page" id="page-business"><div class="topbar"><div class="topbar-title">Business Dashboard</div></div><div class="scroll">Business Dashboard Under Construction</div></div>
-<div class="page" id="page-verify"><div class="topbar"><div class="topbar-title">Shop Verification</div></div><div class="scroll">Shop Verification Under Construction</div></div>
-<div class="page" id="page-profile">
-  <div class="topbar"><div class="topbar-title">My Profile</div></div>
-  <div class="scroll" style="max-width: 600px; margin: 0 auto; width: 100%;">
-    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 20px;">
-      <div id="profile-avatar" style="width: 80px; height: 80px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin: 0 auto 16px;"></div>
-      <div id="profile-name" style="font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;"></div>
-    </div>
-    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
-      <div style="padding: 16px; cursor: pointer; color: #ff4444;" onclick="realLogout()">Log Out</div>
+  <!-- PAGE: MAP -->
+  <div class="page" id="page-map" style="display: none; flex-direction: column;">
+    <div class="topbar"><div class="topbar-title">Deal Map</div></div>
+    <div id="real-map-container" style="flex: 1; min-height: 0; width: 100%; z-index: 1;"></div>
+  </div>
+
+  <!-- PAGE: SURPRISE ME -->
+  <div class="page" id="page-surprise">
+    <div class="topbar"><div class="topbar-title">Surprise Me</div></div>
+    <div class="scroll" style="padding: 20px; max-width: 560px; margin: 0 auto; width: 100%;">
+      <div style="background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 28px; text-align: center; margin-bottom: 24px;">
+        <div style="font-size: 60px; margin-bottom: 14px;" id="surp-emoji">🎲</div>
+        <div style="font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 6px;" id="surp-title">Ready for a discovery?</div>
+        <div style="font-size: 13px; color: var(--text2); margin-bottom: 20px;" id="surp-desc">Let us pick a highly-rated deal near you right now.</div>
+        <button class="btn btn-primary" style="font-size: 15px; padding: 12px 28px; width: 100%; border: 1px solid var(--border2);" onclick="rollSurprise()">🎲 Surprise Me!</button>
+      </div>
+      <div>
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 10px;">Recent Surprises</div>
+        <div id="surp-history" style="font-size:12px;color:var(--text3);text-align:center;">No past surprises yet.</div>
+      </div>
     </div>
   </div>
-</div>
 
-</div></div><script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  <!-- PAGE: ROUTE ALERTS -->
+  <div class="page" id="page-route">
+    <div class="topbar">
+      <div class="topbar-title">Route Alerts</div>
+      <button class="btn btn-primary btn-sm" style="margin-left: auto;">+ Add Route</button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); flex: 1; overflow-y: auto;">
+      <div style="padding: 16px; border-right: 1px solid var(--border);">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text3); margin-bottom: 10px;">Configure New Route</div>
+        <div style="background: var(--bg2); padding: 14px; border: 1px solid var(--border); border-radius: var(--radius2);">
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 4px;">Start Point</label>
+            <input type="text" value="Gulberg III" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: var(--radius2); outline: none;">
+          </div>
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 4px;">End Point</label>
+            <input type="text" value="Liberty Market" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: var(--radius2); outline: none;">
+          </div>
+          <button class="btn btn-ghost" style="width: 100%; margin-top: 8px;">Save Setup</button>
+        </div>
+      </div>
+      <div style="padding: 16px; background: var(--bg);">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text3); margin-bottom: 10px;">Deals Along Your Path</div>
+        <div class="deal-grid" id="route-deals"><div style="color:var(--text3);font-size:12px;">Activate a route to see deals.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: BOOKMARKS -->
+  <div class="page" id="page-bookmarks">
+    <div class="topbar"><div class="topbar-title">Saved Deals</div></div>
+    <div class="scroll">
+      <div class="deal-grid" id="bookmark-grid"><div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 40px;">No saved deals yet.</div></div>
+    </div>
+  </div>
+
+  <!-- PAGE: NOTIFICATIONS -->
+  <div class="page" id="page-notifications">
+    <div class="topbar"><div class="topbar-title">Notifications</div></div>
+    <div class="scroll" style="padding: 20px; color: var(--text3);">No new alerts.</div>
+  </div>
   
-  const firebaseConfig = {
-    apiKey: "AIzaSyA8DvmRmJygJo31qv6CER7m0KDto547zZc",
-    authDomain: "neardis.firebaseapp.com",
-    projectId: "neardis",
-    storageBucket: "neardis.firebasestorage.app",
-    messagingSenderId: "703848374164",
-    appId: "1:703848374164:web:64462329b430a71a3f7981",
-    measurementId: "G-4F405CJ2ZN"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const googleProvider = new GoogleAuthProvider();
-
-  window.AppState = { user: null, activeCat: 'all', flashFilter: false, savedDeals: new Set([2,4,7]) };
-
-  // ============================== AUTH STATE LISTENER ==============================
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      AppState.user = {
-        name: user.displayName || "User",
-        email: user.email,
-        initials: (user.displayName || "U").substring(0, 2).toUpperCase()
-      };
-      document.getElementById('topbar-avatar').textContent = AppState.user.initials;
-      document.getElementById('profile-avatar').textContent = AppState.user.initials;
-      document.getElementById('profile-name').textContent = AppState.user.name;
-      
-      document.getElementById('main-sidebar').style.display = 'flex';
-      window.showPage('feed');
-      renderDeals();
-    } else {
-      AppState.user = null;
-      document.getElementById('main-sidebar').style.display = 'none';
-      renderAuthForm();
-      window.showPage('auth');
-    }
-  });
-
-  // ============================== LOGIN FUNCTIONS ==============================
-  window.realGoogleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      // Gracefully ignore popup closures to prevent the ugly error box you screenshotted
-      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        console.log("Login popup closed safely.");
-      } else {
-        alert("Login Failed: " + error.message);
-      }
-    }
-  };
-
-  window.realEmailSignUp = async () => {
-    const email = document.getElementById('auth-email').value;
-    const pass = document.getElementById('auth-password').value;
-    if (!email || !pass) return alert("Please enter an email and password.");
-    try { await createUserWithEmailAndPassword(auth, email, pass); } 
-    catch (error) { alert("Sign Up Failed: " + error.message); }
-  };
-
-  window.realEmailLogin = async () => {
-    const email = document.getElementById('auth-email').value;
-    const pass = document.getElementById('auth-password').value;
-    if (!email || !pass) return alert("Please enter an email and password.");
-    try { await signInWithEmailAndPassword(auth, email, pass); } 
-    catch (error) { alert("Login Failed: " + error.message); }
-  };
-
-  window.realLogout = () => { signOut(auth); };
-
-  // ============================== UI RENDERERS ==============================
-  window.renderAuthForm = function() {
-    const container = document.getElementById('auth-content');
-    if (!container) return;
-    container.innerHTML = `
-      <div style="text-align: center; margin-bottom: 32px;">
-        <div style="font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px;">Neardis</div>
-        <div style="font-size: 13px; color: var(--text2);">Hyperlocal deal discovery</div>
+  <!-- PAGE: BUSINESS DASHBOARD -->
+  <div class="page" id="page-business">
+    <div class="topbar"><div class="topbar-title">Business Dashboard</div><div style="font-size: 11px; color: var(--text); margin-left: 10px; font-weight: 600;">✓ Verified</div></div>
+    <div class="chips" id="biz-tabs" style="border-bottom: 1px solid var(--border); padding: 10px 16px;">
+      <div class="chip biz-tab active" onclick="document.querySelectorAll('.biz-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active');">Overview</div>
+      <div class="chip biz-tab" onclick="document.querySelectorAll('.biz-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active');">My Deals</div>
+    </div>
+    <div class="scroll" id="biz-content" style="padding: 20px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px;">
+        <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;">
+          <div style="font-size: 10px; color: var(--text3); text-transform: uppercase;">Total Views</div>
+          <div style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 26px;">2,847</div>
+        </div>
+        <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;">
+          <div style="font-size: 10px; color: var(--text3); text-transform: uppercase;">Redemptions</div>
+          <div style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 26px;">312</div>
+        </div>
       </div>
-      
-      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;">
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 5px; text-transform: uppercase;">Email Address</label>
-          <input type="email" id="auth-email" placeholder="you@example.com" style="width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: var(--radius2); outline: none;">
-        </div>
-        <div style="margin-bottom: 18px;">
-          <label style="font-size: 10px; color: var(--text3); display: block; margin-bottom: 5px; text-transform: uppercase;">Password</label>
-          <input type="password" id="auth-password" placeholder="••••••••" style="width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: var(--radius2); outline: none;">
-        </div>
+    </div>
+  </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 24px;">
-          <button class="btn btn-ghost" style="flex: 1; padding: 12px; font-size:14px;" onclick="realEmailLogin()">Log In</button>
-          <button class="btn btn-primary" style="flex: 1; padding: 12px; font-size:14px;" onclick="realEmailSignUp()">Sign Up</button>
-        </div>
-
-        <div style="display: flex; align-items: center; text-align: center; color: var(--text3); font-size: 10px; margin-bottom: 20px;">
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
-          <span style="padding: 0 10px; text-transform: uppercase; letter-spacing: 1px;">Or continue with</span>
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
-        </div>
-        
-        <button class="btn btn-ghost" style="width: 100%; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="realGoogleLogin()">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Google
-        </button>
-
-        <button class="btn btn-ghost" style="width: 100%; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="alert('Apple Login requires an Apple Developer Account setup in Firebase.')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.04 2.26-.7 3.59-.79 1.8-.13 3.23.63 4.12 1.95-3.52 2.06-2.92 6.64.47 8.01-.84 1.25-1.74 2.22-3.26 2.99zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-          Apple
-        </button>
+  <!-- PAGE: VERIFY SHOP (ID ONLY) -->
+  <div class="page" id="page-verify">
+    <div class="topbar"><div class="topbar-title">Shop Verification</div></div>
+    <div class="scroll" style="padding: 20px; max-width: 580px; margin: 0 auto; width: 100%;">
+      <div style="margin-bottom: 20px;">
+        <div style="font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px;">Get Verified on Neardis</div>
+        <div style="font-size: 13px; color: var(--text2);">Verified businesses get a trust badge. Process takes 24 hours.</div>
       </div>
-    `;
-  };
+      <div id="verify-steps"></div>
+      <div id="verify-content"></div>
+    </div>
+  </div>
 
-  // ============================== NAVIGATION ==============================
-  window.showPage = function(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll(`.nav-btn[onclick*="${id}"]`).forEach(b => b.classList.add('active'));
-  };
+  <!-- PAGE: PROFILE -->
+  <div class="page" id="page-profile">
+    <div class="topbar"><div class="topbar-title">My Profile</div></div>
+    <div class="scroll" style="max-width: 600px; margin: 0 auto; width: 100%;">
+      <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 20px;">
+        <div id="profile-avatar" style="width: 80px; height: 80px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin: 0 auto 16px; color: var(--accent);"></div>
+        <div id="profile-name" style="font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;"></div>
+      </div>
+      <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
+        <div style="padding: 16px; cursor: pointer; color: #ff4444;" onclick="realLogout()">Log Out</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 
-  window.setCat = function(cat, el) {
-    AppState.activeCat = cat;
-    document.querySelectorAll('#cat-chips .chip:not(#flash-chip)').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    renderDeals();
-  };
+<!-- DEAL MODAL -->
+<div id="deal-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+  <div style="width: 100%; max-width: 860px; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border);">
+      <div style="font-family: 'Syne', sans-serif; font-weight: 700;">Deal Details</div>
+      <button onclick="closeDealModal()" style="background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; color: var(--text); cursor: pointer; font-size: 12px;">✕ Close</button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); overflow-y: auto;">
+      <div id="modal-main" style="padding: 20px;"></div>
+      <div id="modal-side" style="padding: 20px; background: var(--surface); border-left: 1px solid var(--border);"></div>
+    </div>
+  </div>
+</div>
 
-  window.toggleFF = function(el) {
-    AppState.flashFilter = !AppState.flashFilter;
-    el.classList.toggle('active', AppState.flashFilter);
-    renderDeals();
-  };
-
-  window.toggleBM = function(e, id) {
-    e.stopPropagation();
-    AppState.savedDeals.has(id) ? AppState.savedDeals.delete(id) : AppState.savedDeals.add(id);
-    renderDeals();
-  };
-
-  // ============================== STATIC DATA ==============================
-  const DEALS = [
-    {id:1,shop:"Café Zest",emoji:"☕",cat:"food",title:"50% off Beverages",disc:50,dist:.2,flash:true},
-    {id:2,shop:"TechZone",emoji:"📱",cat:"electronics",title:"Phone Cases 3-for-1",disc:66,dist:.45,flash:false},
-    {id:3,shop:"Zara Outlet",emoji:"👗",cat:"fashion",title:"End of Season — 40% Off",disc:40,dist:.7,flash:false},
-    {id:4,shop:"GlowUp Studio",emoji:"✨",cat:"beauty",title:"Facial + Massage",disc:35,dist:.3,flash:true},
-    {id:6,shop:"HomeSense",emoji:"🛋️",cat:"home",title:"Buy 2 Get 1 Free",disc:33,dist:.5,flash:false}
-  ];
-
-  window.renderDeals = function() {
-    let list = [...DEALS];
-    if (AppState.activeCat !== 'all') list = list.filter(d => d.cat === AppState.activeCat);
-    if (AppState.flashFilter) list = list.filter(d => d.flash);
-    
-    document.getElementById('deal-grid').innerHTML = list.length ? list.map(d => `
-      <div class="deal-card${d.flash ? ' flash' : ''}">
-        ${d.flash ? '<div class="flash-label">⚡ FLASH</div>' : ''}
-        <div class="deal-img">${d.emoji}<div class="deal-badge">-${d.disc}%</div></div>
-        <div class="deal-body">
-          <div class="deal-shop">${d.shop} <span style="color:var(--text);font-weight:600">✓</span></div>
-          <div class="deal-title">${d.title}</div>
-          <div class="deal-meta"><span class="deal-dist">📍 ${d.dist}km away</span></div>
-        </div>
-        <div class="deal-footer">
-          <button class="bm-btn${AppState.savedDeals.has(d.id) ? ' saved' : ''}" onclick="toggleBM(event,${d.id})">${AppState.savedDeals.has(d.id) ? '🔖 Saved' : '🤍 Save'}</button>
-        </div>
-      </div>`).join('') : `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">No deals found</div>`;
-  };
-
-  window.renderAuthForm();
-</script>
+<!-- MUST LOAD APP.JS AS A MODULE -->
+<script type="module" src="app.js"></script>
 </body>
 </html>
