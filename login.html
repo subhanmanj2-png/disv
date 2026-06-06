@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Neardis</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #000000; --bg2: #09090b; 
+  --surface: #18181b; --surface2: #27272a; 
+  --border: #27272a; --border2: #3f3f46; 
+  --text: #ffffff; --text2: #a1a1aa; --text3: #71717a; 
+  --accent: #ffffff; --radius: 12px; --radius2: 8px;
+}
+body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+.auth-box { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; }
+.btn { padding: 12px; border-radius: var(--radius2); border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; transition: all .2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { opacity: .9; }
+.btn-ghost { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface2); }
+input { width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; border-radius: var(--radius2); outline: none; font-family: inherit; margin-bottom: 16px; }
+label { font-size: 10px; color: var(--text3); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+</style>
+</head>
+<body>
+
+<div style="width: 100%; max-width: 400px;">
+  <div style="text-align: center; margin-bottom: 32px;">
+    <div style="font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 8px;">Neardis</div>
+    <div style="font-size: 14px; color: var(--text2);">Hyperlocal deal discovery</div>
+  </div>
+  
+  <div class="auth-box">
+    <label>Email Address</label>
+    <input type="email" id="auth-email" placeholder="you@example.com">
+    
+    <label>Password</label>
+    <input type="password" id="auth-password" placeholder="••••••••">
+
+    <div style="display: flex; gap: 10px; margin-bottom: 24px;">
+      <button class="btn btn-ghost" onclick="realEmailLogin()">Log In</button>
+      <button class="btn btn-primary" onclick="realEmailSignUp()">Sign Up</button>
+    </div>
+
+    <div style="display: flex; align-items: center; text-align: center; color: var(--text3); font-size: 10px; margin-bottom: 20px;">
+      <div style="flex: 1; height: 1px; background: var(--border);"></div>
+      <span style="padding: 0 10px; text-transform: uppercase; letter-spacing: 1px;">Or continue with</span>
+      <div style="flex: 1; height: 1px; background: var(--border);"></div>
+    </div>
+    
+    <button class="btn btn-ghost" style="margin-bottom: 12px;" onclick="realGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Google
+    </button>
+    <button class="btn btn-ghost" onclick="alert('Apple Login requires an Apple Developer Account setup in Firebase.')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.04 2.26-.7 3.59-.79 1.8-.13 3.23.63 4.12 1.95-3.52 2.06-2.92 6.64.47 8.01-.84 1.25-1.74 2.22-3.26 2.99zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+      Apple
+    </button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyA8DvmRmJygJo31qv6CER7m0KDto547zZc",
+    authDomain: "neardis.firebaseapp.com",
+    projectId: "neardis",
+    storageBucket: "neardis.firebasestorage.app",
+    messagingSenderId: "703848374164",
+    appId: "1:703848374164:web:64462329b430a71a3f7981"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const googleProvider = new GoogleAuthProvider();
+
+  // If already logged in, redirect to index.html immediately
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      window.location.href = 'index.html';
+    }
+  });
+
+  window.realGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+        alert("Login Failed: " + error.message);
+      }
+    }
+  };
+
+  window.realEmailSignUp = async () => {
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-password').value;
+    if (!email || !pass) return alert("Please enter an email and password.");
+    try { await createUserWithEmailAndPassword(auth, email, pass); } 
+    catch (error) { alert("Sign Up Failed: " + error.message); }
+  };
+
+  window.realEmailLogin = async () => {
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-password').value;
+    if (!email || !pass) return alert("Please enter an email and password.");
+    try { await signInWithEmailAndPassword(auth, email, pass); } 
+    catch (error) { alert("Login Failed: " + error.message); }
+  };
+</script>
+</body>
+</html>
