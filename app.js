@@ -27,17 +27,24 @@ const AppState = {
 };
 
 // ==========================================
-// ROUTING GUARD
+// ROUTING GUARD & DEV BYPASS
 // ==========================================
 
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    AppState.user = {
-      name: user.displayName || "User", 
-      email: user.email, 
-      uid: user.uid,
-      initials: (user.displayName || "U").substring(0, 2).toUpperCase()
-    };
+  const isDevBypass = sessionStorage.getItem('neardis_dev_bypass') === 'true';
+
+  if (user || isDevBypass) {
+    if (isDevBypass && !user) {
+      console.warn("🛠️ DEV BYPASS ACTIVE");
+      AppState.user = { name: "Dev Mode", email: "dev@neardis.local", uid: "dev-bypass-001", initials: "DV" };
+    } else {
+      AppState.user = {
+        name: user.displayName || "User", 
+        email: user.email, 
+        uid: user.uid,
+        initials: (user.displayName || "U").substring(0, 2).toUpperCase()
+      };
+    }
     
     document.getElementById('topbar-avatar').textContent = AppState.user.initials;
     document.getElementById('profile-avatar').textContent = AppState.user.initials;
@@ -47,13 +54,16 @@ onAuthStateChanged(auth, async (user) => {
     await fetchDeals();
     window.showPage('feed');
   } else {
-    // KICK OUT TO LOGIN PAGE
+    // SECURITY KICK: If not logged in and no bypass, force login page
     window.location.href = 'login.html';
   }
 });
 
 window.realLogout = () => {
+  sessionStorage.removeItem('neardis_dev_bypass');
   signOut(auth).then(() => {
+    window.location.href = 'login.html';
+  }).catch(() => {
     window.location.href = 'login.html';
   });
 };
@@ -66,10 +76,10 @@ async function fetchDeals() {
   try {
     const querySnapshot = await getDocs(collection(db, "deals"));
     if (querySnapshot.empty) {
-      // Seed UI with test deals if Firebase is empty
       AppState.deals = [
         { id: 1, shopName: "Café Zest", emoji: "☕", category: "food", title: "50% off Beverages", discount: 50, distance: 0.2, flash: true, originalPrice: 650, price: 325, coordinates: { lat: 31.5204, lng: 74.3587 } },
-        { id: 2, shopName: "TechZone", emoji: "📱", category: "electronics", title: "Phone Cases 3-for-1", discount: 66, distance: 0.8, flash: false, originalPrice: 3000, price: 1000, coordinates: { lat: 31.5215, lng: 74.3599 } }
+        { id: 2, shopName: "TechZone", emoji: "📱", category: "electronics", title: "Phone Cases 3-for-1", discount: 66, distance: 0.8, flash: false, originalPrice: 3000, price: 1000, coordinates: { lat: 31.5215, lng: 74.3599 } },
+        { id: 3, shopName: "Zara Outlet", emoji: "👗", category: "fashion", title: "End of Season", discount: 40, distance: 0.7, flash: false, originalPrice: 8500, price: 5100, coordinates: { lat: 31.5180, lng: 74.3550 } }
       ];
     } else {
       AppState.deals = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -111,7 +121,7 @@ window.showPage = function(pageId) {
 // FEED LOGIC
 // ==========================================
 
-window.setCategory = (cat, el) => { AppState.activeCategory = cat; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); if (el) el.classList.add('active'); renderFeed(); };
+window.setCat = (cat, el) => { AppState.activeCategory = cat; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); if (el) el.classList.add('active'); renderFeed(); };
 window.toggleFlashFilter = (el) => { AppState.flashFilter = !AppState.flashFilter; if (el) el.classList.toggle('active'); renderFeed(); };
 document.getElementById('search-input').addEventListener('input', (e) => { AppState.searchQuery = e.target.value.toLowerCase(); renderFeed(); });
 
